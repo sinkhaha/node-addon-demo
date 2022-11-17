@@ -102,3 +102,11 @@ dist
 
 # TernJS port file
 .tern-port
+
+.vscode
+
+hello-world-demo/nan/node_modules/
+hello-world-demo/napi/*/node_modules/
+hello-world-demo/v8/build/
+hello-world-demo/nan/build/
+hello-world-demo/napi/*/build/

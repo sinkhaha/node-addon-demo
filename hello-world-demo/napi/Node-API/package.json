@@ -1,0 +1,14 @@
+{
+  "name": "napi",
+  "version": "1.0.0",
+  "description": "napi",
+  "main": "hello.js",
+  "private": true,
+  "dependencies": {
+    "bindings": "^1.5.0"
+  },
+  "scripts": {
+    "test": "node hello.js"
+  },
+  "gypfile": true
+}
