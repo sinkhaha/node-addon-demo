@@ -9,7 +9,7 @@
     "node-addon-api": "^5.0.0"
   },
   "scripts": {
-    "test": "node hello.js"
+    "test": "node test.js"
   },
   "gypfile": true
 }
