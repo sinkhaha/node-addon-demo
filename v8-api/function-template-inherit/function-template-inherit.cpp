@@ -1,5 +1,6 @@
 #include <node.h>
-// 等价于function-template-inherit.js的js代码
+
+// 此 C++ 代码等价于 function-template-inherit.js 的js代码
 namespace __inherit__ {
 
 using v8::FunctionCallbackInfo;
@@ -28,8 +29,8 @@ void SetName(const FunctionCallbackInfo<Value>& args)
 
     Local<Object> self = args.Holder();
 
-    // 等价于 this.name = 传进来的第一个参数
-    self->Set(context, String::NewFromUtf8(isolate, "name").ToLocalChecked(), args[0]);
+    // 等价于 "this.name = 传进来的第一个参数"
+    self->Set(context, String::NewFromUtf8(isolate, "name").ToLocalChecked(), args[0]).Check();
 }
 
 void Summary(const FunctionCallbackInfo<Value>& args)
@@ -57,11 +58,11 @@ void Pet(const FunctionCallbackInfo<Value>& args)
 
     Local<Object> self = args.Holder();
 
-    // 等价于
+    // 等价于 js 代码
     // this.name = 'Unknown';
     // this.type = 'animal';
-    self->Set(context, String::NewFromUtf8(isolate, "name").ToLocalChecked(), String::NewFromUtf8(isolate, "Unknown").ToLocalChecked());
-    self->Set(context, String::NewFromUtf8(isolate, "type").ToLocalChecked(), String::NewFromUtf8(isolate, "animal").ToLocalChecked());
+    self->Set(context, String::NewFromUtf8(isolate, "name").ToLocalChecked(), String::NewFromUtf8(isolate, "Unknown").ToLocalChecked()).Check();
+    self->Set(context, String::NewFromUtf8(isolate, "type").ToLocalChecked(), String::NewFromUtf8(isolate, "animal").ToLocalChecked()).Check();
 
     // 返回this
     args.GetReturnValue().Set(self);
@@ -76,15 +77,16 @@ void Dog(const FunctionCallbackInfo<Value>& args)
     Local<Function> super = cons.Get(isolate); // 获取super，即Pet
 
     // 即等价于js代码的 Pet.call(this)
-    super->Call(context, self, 0, NULL);
-    // => this.type = 'dog'
-    self->Set(context, String::NewFromUtf8(isolate, "type").ToLocalChecked(), String::NewFromUtf8(isolate, "dog").ToLocalChecked());
+    super->Call(context, self, 0, NULL).ToLocalChecked();
 
-    // 返回自身
+    // 等价于js代码 this.type = 'dog'
+    self->Set(context, String::NewFromUtf8(isolate, "type").ToLocalChecked(), String::NewFromUtf8(isolate, "dog").ToLocalChecked()).Check();
+
+    // 返回自身 this
     args.GetReturnValue().Set(self);
 }
 
-void Init(Local<Object> exports, Local<Object> module)
+void init(Local<Object> exports, Local<Object> module)
 {
     Isolate* isolate = Isolate::GetCurrent();
     Local<Context> context = isolate->GetCurrentContext();
@@ -105,16 +107,18 @@ void Init(Local<Object> exports, Local<Object> module)
 
     cons.Reset(isolate, pet_cons);
 
+    // 函数模板Dog
     Local<FunctionTemplate> dog = FunctionTemplate::New(isolate, Dog);
-    dog->Inherit(pet); // Dog继承Pet
+    // Dog继承Pet
+    dog->Inherit(pet); 
 
     Local<Function> dog_cons = dog->GetFunction(context).ToLocalChecked();
     
     // 暴露Pet和Dog函数
-    exports->Set(context, String::NewFromUtf8(isolate, "Pet").ToLocalChecked(), pet_cons);
-    exports->Set(context, String::NewFromUtf8(isolate, "Dog").ToLocalChecked(), dog_cons);
+    exports->Set(context, String::NewFromUtf8(isolate, "Pet").ToLocalChecked(), pet_cons).Check();
+    exports->Set(context, String::NewFromUtf8(isolate, "Dog").ToLocalChecked(), dog_cons).Check();
 }
 
-NODE_MODULE(_template, Init)
+NODE_MODULE(addon, init)
 
 }

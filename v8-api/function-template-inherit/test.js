@@ -12,7 +12,8 @@ console.log(dog1.summary()); // Unknown is a/an dog.
 dog1.setName('dog');
 console.log(dog1.summary()); //dog is a/an dog.
 
-/**==========等价于以下js代码====== */
+/**==========功能等价于以下js代码====== */
+
 const testInheritJs = require('./function-template-inherit.js');
 
 const pet2 = new testInheritJs.Pet();
