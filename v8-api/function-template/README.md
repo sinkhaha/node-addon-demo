@@ -11,6 +11,7 @@ node-gyp clean # 清掉build构建目录和out目录
 
 node-gyp rebuild # 即依次执行clean/configure/build命令
 ```
+
 # 测试
 ```bash
 node test.js # 测试
