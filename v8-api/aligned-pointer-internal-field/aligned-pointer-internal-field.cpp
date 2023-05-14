@@ -1,6 +1,6 @@
 #include <node.h>
 
-namespace aligned_pointer_internal_field {
+namespace __aligned_pointer_internal_field__ {
 
 using v8::FunctionCallbackInfo;
 using v8::HandleScope;
