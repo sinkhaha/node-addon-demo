@@ -9,7 +9,8 @@ node-gyp build # 构建，在build下生成Release/object-template.node，名字
 
 node-gyp clean # 清掉build构建目录和out目录
 
-node-gyp rebuild # 即依次执行clean/configure/build命令
+# 也可以直接使用rebuid命令，此命令依次执行clean/configure/build命令
+node-gyp rebuild 
 ```
 
 # 测试

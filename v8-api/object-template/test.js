@@ -16,13 +16,6 @@ console.log(array);
 // [
 //     TestClass2 { num: 233 },
 //     TestClass2 { num: 233 },
-//     TestClass2 { num: 233 },
-//     TestClass2 { num: 233 },
-//     TestClass2 { num: 233 },
-//     TestClass2 { num: 233 },
-//     TestClass2 { num: 233 },
-//     TestClass2 { num: 233 },
-//     TestClass2 { num: 233 },
 //     TestClass2 { num: 233 }
 //   ]
 
@@ -32,19 +25,12 @@ console.log(array);
 // [
 //     TestClass2 { num: 666 },
 //     TestClass2 { num: 233 },
-//     TestClass2 { num: 233 },
-//     TestClass2 { num: 233 },
-//     TestClass2 { num: 233 },
-//     TestClass2 { num: 233 },
-//     TestClass2 { num: 233 },
-//     TestClass2 { num: 233 },
-//     TestClass2 { num: 233 },
 //     TestClass2 { num: 233 }
 //   ]
 
 /** ========= 测试3 ==========*/
 const func = objectTpl.func;
-console.log(func); // { cat: '南瓜饼', dog: '蛋花汤' }
+console.log(func); // { cat: '小猫', dog: '小狗' }
 
 const funcRst = func();
 console.log(funcRst); // 2333
