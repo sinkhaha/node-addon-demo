@@ -110,3 +110,5 @@ hello-world-demo/napi/*/node_modules/
 hello-world-demo/v8/build/
 hello-world-demo/nan/build/
 hello-world-demo/napi/*/build/
+v8-api/*/build/
+
