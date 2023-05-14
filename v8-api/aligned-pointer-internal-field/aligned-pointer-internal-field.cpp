@@ -1,120 +1,88 @@
-#include <iostream>
 #include <node.h>
 
 namespace aligned_pointer_internal_field {
 
 using v8::FunctionCallbackInfo;
+using v8::HandleScope;
+using v8::ObjectTemplate;
+using v8::FunctionTemplate;
+using v8::Function;
 using v8::Isolate;
 using v8::Local;
+using v8::Persistent;
+using v8::External;
 using v8::Object;
 using v8::String;
 using v8::Value;
-using v8::FunctionTemplate;
-using v8::Function;
 using v8::Number;
+using v8::Array;
 using v8::MaybeLocal;
 using v8::Context;
-using v8::Int32;
-using v8::Global;
 
-void ProtoMethod(const FunctionCallbackInfo<Value>& args) {
-    std::cout<<"调用 ProtoMethod 方法"<<std::endl;
-}
-
-void InstanceMethod(const FunctionCallbackInfo<Value>& args) {
-    std::cout<<"调用 InstanceMethod 方法"<<std::endl;
-}
-
-Local<String> newString(const char * name) {
-  return String::NewFromUtf8(Isolate::GetCurrent(), name, v8::NewStringType::kNormal).ToLocalChecked();
-}
-
-// 自定义类
-class Dummy {
-  public:
-    Dummy(Local<Object> object): jsObject(Isolate::GetCurrent(), object) {
-      object->SetAlignedPointerInInternalField(0, static_cast<void*>(this));
-      Local<Context> context = Isolate::GetCurrent()->GetCurrentContext();
-      (void)object->Set(context, newString("hello"), newString("world"));
-    };
-    Global<Object> jsObject;
-    int dummy_field = 1;
+// 自定义数据结构，内部加了一个persistent持久句柄，作用是用于回收自定义字段
+struct PersistentWrapper {
+    Persistent<Object> persistent; // 持久句柄
+    int value;
 };
 
-void New(const FunctionCallbackInfo<Value>& args) {
-    new Dummy(args.This());
+/**
+ * 弱持久句柄的回调函数
+ * 当对象被回收时，此回调会被触发
+ */
+void WeakCallback(const v8::WeakCallbackInfo<PersistentWrapper>& data)
+{
+    PersistentWrapper* wrapper = data.GetParameter(); // 获取到SetWeak方法传的第一个参数，此时是wrapper参数
+
+    printf("deleting 0x%.8X: %d...", wrapper, wrapper->value);
+
+    wrapper->persistent.Reset(); // 重置(释放)这个持久句柄
+
+    delete wrapper; // 删除wrapper对象，即删除堆内存分配的指针
+
+    printf("ok\n");
 }
 
-void Method(const FunctionCallbackInfo<Value>& args) {
+/**
+ * 当obj对象被垃圾回收时，会触发WeakCallback回调，这个回调里主要是删除new出来的PersistentWrapper对象
+ */
+void CreateObject(const FunctionCallbackInfo<Value>& args)
+{
     Isolate* isolate = args.GetIsolate();
     Local<Context> context = isolate->GetCurrentContext();
 
-    Local<String> hello = newString("hello");
-    Local<String> helloValue = args.Holder()->Get(context, hello).ToLocalChecked().As<String>();
+    Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
+    // 设置对象模板的内置字段数为1
+    templ->SetInternalFieldCount(1);
 
-    Dummy* dummy = static_cast<Dummy*>(args.Holder()->GetAlignedPointerFromInternalField(0));
+    // 实例子化PersistentWrapper
+    PersistentWrapper* wrapper = new PersistentWrapper();
+    // 方法传入的第一个参数赋值给value
+    wrapper->value = args[0]->ToNumber(context).ToLocalChecked()->Int32Value(context).FromJust();
     
-    Local<Object> obj = Object::New(isolate);
-    (void)obj->Set(context, hello, helloValue);
-    (void)obj->Set(context, newString("dummy_field"), Number::New(isolate, dummy->dummy_field));
+    // obj模板对象设置内置字段，值为wrapper对象
+    Local<Object> obj = templ->NewInstance(context).ToLocalChecked();
 
-    std::cout<<(args.Holder() == args.This() ? "same" : "not same" )<<std::endl;
+
+    obj->SetAlignedPointerInInternalField(0, wrapper); // 时内置字段是一个 External 永生句柄类型
+
+    // 重置(释放)wrapper的持久句柄
+    wrapper->persistent.Reset(isolate, obj);
+    // 将持久句柄设置为弱持久句柄，回调函数为WeakCallback（当被回收时被调用）。wrapper参数可以在WeakCallback方法中获取到
+    wrapper->persistent.SetWeak(wrapper, WeakCallback, v8::WeakCallbackType::kInternalFields);
 
     args.GetReturnValue().Set(obj);
 }
 
-void init(
-  Local<Object> exports,
-  Local<Value> module,
-  Local<Context> context
-) {
-  Isolate* isolate = context->GetIsolate();
-  
-  // 新建一个函数模版
-  Local<FunctionTemplate> funcWithCallback = FunctionTemplate::New(isolate, New);
+void Init(Local<Object> exports, Local<Object> module)
+{
+    Isolate* isolate = Isolate::GetCurrent();
+    Local<Context> context = isolate->GetCurrentContext();
+    HandleScope scope(isolate);
 
-  // 设置内置字段数为1 
-  funcWithCallback->InstanceTemplate()->SetInternalFieldCount(1);
-  funcWithCallback->PrototypeTemplate()->Set(isolate, "method", FunctionTemplate::New(isolate, Method));
-  
-  // 新建一个字符串表示函数名
-  Local<String> funcWithCallbackName = String::NewFromUtf8(isolate, "FuncWithCallback", v8::NewStringType::kNormal).ToLocalChecked();
-  // 设置类名
-  funcWithCallback->SetClassName(funcWithCallbackName);
-  Local<Function> funcWithCallbackInstance = funcWithCallback->GetFunction(context).ToLocalChecked();
-
-  // 新建一个函数模版
-  Local<FunctionTemplate> parentFunc = FunctionTemplate::New(isolate);
-  // 新建一个字符串 Parent 表示函数名
-  Local<String> parentName = String::NewFromUtf8(isolate, "Parent", v8::NewStringType::kNormal).ToLocalChecked();
-  // 设置函数名
-  parentFunc->SetClassName(parentName);
-
-  // 设置原型属性
-  parentFunc->PrototypeTemplate()->Set(isolate, "protoField", Number::New(isolate, 1));
-  parentFunc->PrototypeTemplate()->Set(isolate, "protoMethod", FunctionTemplate::New(isolate, ProtoMethod));
-  
-  // 设置对象属性
-  parentFunc->InstanceTemplate()->Set(isolate, "instanceField", Number::New(isolate, 2));
-  parentFunc->InstanceTemplate()->Set(isolate, "instanceMethod", FunctionTemplate::New(isolate, InstanceMethod));
-
-  // 根据函数模板创建一个函数
-  Local<Function> parentInstance = parentFunc->GetFunction(context).ToLocalChecked();
-
-  Local<FunctionTemplate> childFunc = FunctionTemplate::New(isolate);
-  Local<String> childName = String::NewFromUtf8(isolate, "Child", v8::NewStringType::kNormal).ToLocalChecked();
-  childFunc->SetClassName(childName);
-  childFunc->Inherit(parentFunc);
-
-  Local<Function> childInstance = childFunc->GetFunction(context).ToLocalChecked();
-
-  // 导出方法
-  exports->Set(context, funcWithCallbackName, funcWithCallbackInstance).Check();
-  exports->Set(context, parentName, parentInstance).Check();
-  exports->Set(context, childName, childInstance).Check();
+    // 暴露create函数，其函数体为CreateObject
+    exports->Set(context, String::NewFromUtf8(isolate, "create").ToLocalChecked(), FunctionTemplate::New(isolate, CreateObject)->GetFunction(context).ToLocalChecked()).Check();
 }
 
-NODE_MODULE(addon, init)
+NODE_MODULE(_template, Init)
 
-
-} 
+}
