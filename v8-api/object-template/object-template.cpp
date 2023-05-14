@@ -46,7 +46,7 @@ void Func(const FunctionCallbackInfo<Value>& args) {
     args.GetReturnValue().Set(2333);
 }
 
-void init(Local<Object> exports) {
+void Init(Local<Object> exports) {
     Isolate* isolate = Isolate::GetCurrent();
     HandleScope scope(isolate);
 
@@ -108,6 +108,6 @@ void init(Local<Object> exports) {
     exports->Set(context, String::NewFromUtf8(isolate, "func").ToLocalChecked(), newInstance).Check();;
 }
 
-NODE_MODULE(addon, init)
+NODE_MODULE(addon, Init)
 
 }

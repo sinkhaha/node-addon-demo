@@ -29,7 +29,7 @@ void New(const FunctionCallbackInfo<Value>& args)
     args.GetReturnValue().Set(args.This()); // 返回this对象
 }
 
-void init(Local<Object> exports) {
+void Init(Local<Object> exports) {
     Isolate* isolate = Isolate::GetCurrent(); // 获取v8实例
     HandleScope scope(isolate); // 实例化句柄对象
 
@@ -62,6 +62,6 @@ void init(Local<Object> exports) {
 
 }
 
-NODE_MODULE(addon, init)
+NODE_MODULE(addon, Init)
 
 }
